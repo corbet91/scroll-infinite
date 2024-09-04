@@ -1,22 +1,78 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { MovieCard } from "./MovieCard";
 
 function App() {
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMovie = async () => {
+    const API_KEY = 'a9d20e61459f725a615a0702ac8025ca';
+    const URL = `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=en-US&page=${page}`;
+    const data = await axios.get(URL, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    setData((prevData) => [...prevData, ...data.data.results]);
+    setLoading(false);
+  };
+  useEffect(() => {
+    fetchMovie();
+  }, [page]);
+
+  const handleScroll = () => {
+    if (
+      document.body.scrollHeight - 300 <
+      window.scrollY + window.innerHeight
+    ) {
+      setLoading(true);
+    }
+  };
+
+  function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        func(...args);
+      }, delay);
+    };
+  }
+
+  window.addEventListener("scroll", debounce(handleScroll, 500));
+
+  useEffect(() => {
+    if (loading == true) {
+      setPage((prevPage) => prevPage + 1);
+    }
+  }, [loading]);
+  console.log("document.body.scrollHeight",document.body.scrollHeight)
+  console.log("window.scrollY",window.scrollY)
+  console.log("window.innerHeight",window.innerHeight)
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        Popular movies according to Tmdb
+        <div className="movieCardContainer">
+          {data.length > 1 &&
+            data.map((item) => {
+              return (
+                <MovieCard
+                  key={item.id}
+                  title={item.original_title}
+                  description={item.overview}
+                  rating={item.vote_average}
+                  imageURL={item.poster_path}
+                />
+              );
+            })}
+          {loading && <h1>Loading....</h1>}
+        </div>
       </header>
     </div>
   );
